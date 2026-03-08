@@ -1,29 +1,21 @@
 
 rules:
+  - id: fix-s3-public-read
+    patterns:
+      - pattern: acl = $VALUE
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ".*public-read.*"
+    fix: acl = "private"
+    message: "Changing public S3 ACL to private."
+    severity: WARNING
+    languages: [hcl]
 
-# Fix 1: S3 public bucket ACL
-- id: terraform-s3-no-public-acl
-  languages:
-    - terraform
-  message: Remove public-read ACL
-  severity: ERROR
+  - id: fix-docker-root
+    patterns:
+      - pattern: USER root
+    fix: USER node
+    message: "Switching root user to 'node' user."
+    severity: WARNING
+    languages: [dockerfile]
 
-  pattern: |
-    acl = "public-read"
-
-  fix: |
-    acl = "private"
-
-
-# Fix 2: Restrict SSH ingress
-- id: terraform-no-open-ssh
-  languages:
-    - terraform
-  message: Restrict SSH access
-  severity: ERROR
-
-  pattern: |
-    cidr_blocks = ["0.0.0.0/0"]
-
-  fix: |
-    cidr_blocks = ["10.0.0.0/16"]
