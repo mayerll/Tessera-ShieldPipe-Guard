@@ -1,0 +1,4 @@
+
+flask==0.12.1  # Highly vulnerable version
+requests==2.20.0
+
