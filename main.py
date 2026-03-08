@@ -39,7 +39,7 @@ def scan(
         severity_count[sev] = severity_count.get(sev, 0) + 1
 
     # JSON output includes summary
-    if json_output is False:
+    if json_output:
         output = {
             "target": target,
             "findings": findings,
