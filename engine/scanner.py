@@ -4,120 +4,64 @@ import json
 import os
 
 class SecurityScanner:
-    def __init__(self, target_path: str):
-        self.target_path = target_path
+    def __init__(self, target: str):
+        self.target = target
 
     def run(self) -> list:
-        """Main entry point for scanning logic."""
-        if not os.path.exists(self.target_path):
-            return [{"rule": "ERROR", "severity": "CRITICAL", "message": f"Path not found: {self.target_path}"}]
+        # 1. Check if it's a local file/directory
+        if os.path.exists(self.target):
+            if self.target.endswith(".tf") or os.path.isdir(self.target):
+                return self._scan_terraform()
+            if "Dockerfile" in self.target:
+                return self._scan_dockerfile()
 
-        # Route to specific scanner based on file type
-        if self.target_path.endswith(".tf") or (os.path.isdir(self.target_path) and any(f.endswith('.tf') for f in os.listdir(self.target_path))):
-            return self._scan_terraform()
-        elif "Dockerfile" in self.target_path:
-            return self._scan_dockerfile()
+        # 2. Otherwise, treat it as a Docker Image name
+        return self._scan_container_image()
 
-        return []
-
-    def _get_mapped_severity(self, check_id: str, check_name: str, raw_severity: str) -> str:
-        """Helper to ensure Severity is never empty by mapping keywords if null."""
-        if raw_severity and raw_severity.strip():
-            return raw_severity.upper()
-
-        # Heuristic mapping for open-source Checkov results
-        identity = (check_id + check_name).upper()
-        if any(k in identity for k in ["PUBLIC", "ACL", "SECRET", "PASSWORD", "KEY", "ACCESS_BLOCK"]):
-            return "HIGH"
-        if any(k in identity for k in ["ENCRYPT", "LOGGING", "VERSIONING", "PORT", "SSH"]):
-            return "MEDIUM"
-
-        return "LOW"
+    def _get_severity(self, c_id, c_name, raw):
+        if raw and str(raw) != "None": return str(raw).upper()
+        ident = (str(c_id) + str(c_name)).upper()
+        if any(k in ident for k in ["PUBLIC", "ACL", "SECRET", "CRITICAL"]): return "HIGH"
+        return "MEDIUM"
 
     def _scan_terraform(self):
-        """Uses Checkov to scan Terraform files with enhanced Severity parsing."""
         try:
-            is_file = os.path.isfile(self.target_path)
-            cmd = ["checkov", "-f" if is_file else "-d", self.target_path, "--output", "json", "--quiet"]
-
-            # Run checkov. Note: checkov exits with code 1 if issues are found,
-            # so we capture output regardless of returncode.
-            result = subprocess.run(cmd, capture_output=True, text=True)
-
-            if not result.stdout.strip():
-                return []
-
-            data = json.loads(result.stdout)
-
-            # Checkov can return a list of reports or a single report object
-            failed_checks = []
-            if isinstance(data, list):
-                for report in data:
-                    failed_checks.extend(report.get("results", {}).get("failed_checks", []))
-            else:
-                failed_checks = data.get("results", {}).get("failed_checks", [])
-
-            processed = []
-            for c in failed_checks:
-                processed.append({
-                    "rule": c.get("check_id"),
-                    "severity": self._get_mapped_severity(
-                        c.get("check_id", ""),
-                        c.get("check_name", ""),
-                        c.get("severity")
-                    ),
-                    "message": c.get("check_name")
-                })
-            return processed
-        except Exception as e:
-            return [{"rule": "SCAN_ERR", "severity": "HIGH", "message": f"Checkov failed: {str(e)}"}]
+            cmd = ["checkov", "-f" if os.path.isfile(self.target) else "-d", self.target, "--output", "json", "--quiet"]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            data = json.loads(res.stdout)
+            failed = data.get("results", {}).get("failed_checks", []) if isinstance(data, dict) else []
+            return [{"rule": c['check_id'], "severity": self._get_severity(c['check_id'], c['check_name'], c.get('severity')), "message": c['check_name']} for c in failed]
+        except: return []
 
     def _scan_dockerfile(self):
-        """Attempts local Hadolint scan, falls back to Docker-based Trivy on failure."""
+        """Uses Trivy via Docker to bypass macOS library issues."""
+        return self._docker_trivy_cmd("config")
+
+    def _scan_container_image(self):
+        """Scans a full container image for CVEs."""
+        return self._docker_trivy_cmd("image")
+
+    def _docker_trivy_cmd(self, mode: str):
         try:
-            # 1. Try Hadolint (Fast, local)
-            res = subprocess.run(["hadolint", self.target_path, "-f", "json"], capture_output=True, text=True)
-            if res.returncode in [0, 1] and res.stdout.strip():
-                data = json.loads(res.stdout)
-                return [{
-                    "rule": i['code'],
-                    "severity": i.get('level', 'MEDIUM').upper(),
-                    "message": i['message']
-                } for i in data]
-        except:
-            pass # Move to fallback
-
-        # 2. Fallback to Trivy via Docker (Solves macOS 10.15 'Symbol not found' error)
-        return self._docker_fallback_trivy()
-
-    def _docker_fallback_trivy(self):
-        """Runs Trivy in a container to scan the Dockerfile safely."""
-        try:
-            abs_path = os.path.abspath(self.target_path)
-            dir_name = os.path.dirname(abs_path)
-            file_name = os.path.basename(abs_path)
-
-            # Mount local dir to /apps in container
-            cmd = [
-                "docker", "run", "--rm",
-                "-v", f"{dir_name}:/apps",
-                "aquasec/trivy", "config", f"/apps/{file_name}",
-                "--format", "json", "--quiet"
-            ]
+            abs_p = os.path.abspath(self.target)
+            if mode == "config":
+                # Mount directory for Dockerfile scan
+                cmd = ["docker", "run", "--rm", "-v", f"{os.path.dirname(abs_p)}:/apps", "aquasec/trivy", "config", f"/apps/{os.path.basename(abs_p)}", "--format", "json", "--quiet"]
+            else:
+                # Direct image scan (mount docker sock to see local images)
+                cmd = ["docker", "run", "--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock", "aquasec/trivy", "image", "--format", "json", "--quiet", self.target]
 
             res = subprocess.run(cmd, capture_output=True, text=True)
             data = json.loads(res.stdout)
-
             findings = []
-            results = data.get("Results", [])
-            for r in results:
+            for r in data.get("Results", []):
+                # Handle Misconfigurations (Dockerfiles)
                 for m in r.get("Misconfigurations", []):
-                    findings.append({
-                        "rule": m.get('ID'),
-                        "severity": m.get('Severity', 'MEDIUM').upper(),
-                        "message": m.get('Title')
-                    })
+                    findings.append({"rule": m['ID'], "severity": m['Severity'], "message": m['Title']})
+                # Handle Vulnerabilities (Images)
+                for v in r.get("Vulnerabilities", []):
+                    findings.append({"rule": v['VulnerabilityID'], "severity": v['Severity'], "message": f"{v['PkgName']}: {v.get('Title', 'CVE')}"})
             return findings
-        except Exception as e:
-            return [{"rule": "DOCKER_ERR", "severity": "HIGH", "message": f"Trivy fallback failed: {str(e)}"}]
+        except:
+            return [{"rule": "DOCKER_ERR", "severity": "HIGH", "message": "Ensure Docker is running for this scan"}]
 

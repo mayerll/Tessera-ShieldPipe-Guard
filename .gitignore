@@ -1,0 +1,20 @@
+
+# Python temporary files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# ShieldPipe specific
+.shieldpipe_backups/
+results.json
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+

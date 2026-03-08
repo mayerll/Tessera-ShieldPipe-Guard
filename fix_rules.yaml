@@ -1,0 +1,25 @@
+rules:
+  - id: fix-s3-public-read
+    patterns:
+      - pattern: acl = "public-read"
+    fix: acl = "private"
+    message: "Changing public S3 ACL to private."
+    severity: WARNING
+    languages: [hcl]
+
+  - id: fix-security-group-all-ip
+    patterns:
+      - pattern: cidr_blocks = ["0.0.0.0/0"]
+    fix: cidr_blocks = ["10.0.0.0/8"] 
+    message: "Changing open SSH to internal network only."
+    severity: WARNING
+    languages: [hcl]
+
+  - id: fix-ebs-encryption
+    patterns:
+      - pattern: encrypted = false
+    fix: encrypted = true
+    message: "Enabling EBS encryption."
+    severity: WARNING
+    languages: [hcl]
+
