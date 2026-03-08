@@ -32,14 +32,26 @@ def scan(
     with console.status("[bold green]Analyzing target..."):
         findings = scanner.run()
 
-    if json_output:
-        print(json.dumps({"target": target, "findings": findings}, indent=2))
+    # Count the number of issues by severity
+    severity_count = {}
+    for issue in findings:
+        sev = issue['severity'].upper()
+        severity_count[sev] = severity_count.get(sev, 0) + 1
+
+    if json_output is False:
+        output = {
+            "target": target,
+            "findings": findings,
+            "summary": severity_count
+        }
+        print(json.dumps(output, indent=2))
         return
 
     if not findings:
         console.print("[bold green]✔ No security issues detected![/bold green]")
         return
 
+    # Detailed findings table
     table = Table(title=f"Findings: {target}")
     table.add_column("Rule ID", style="cyan")
     table.add_column("Severity", style="bold red")
@@ -48,6 +60,15 @@ def scan(
         table.add_row(str(issue['rule']), str(issue['severity']), str(issue['message']))
     console.print(table)
 
+    # Summary table
+    summary_table = Table(title="Summary")
+    summary_table.add_column("Severity", style="bold")
+    summary_table.add_column("Count", justify="right")
+    for sev, count in severity_count.items():
+        summary_table.add_row(sev, str(count))
+    console.print(summary_table)
+
+    # Apply fixes if requested
     if (fix or dry_run) and os.path.exists(target):
         if not dry_run:
             create_backup(target)
@@ -69,4 +90,3 @@ def rollback(file_path: str):
 
 if __name__ == "__main__":
     app()
-
