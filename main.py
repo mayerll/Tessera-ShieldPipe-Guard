@@ -38,6 +38,7 @@ def scan(
         sev = issue['severity'].upper()
         severity_count[sev] = severity_count.get(sev, 0) + 1
 
+    # JSON output includes summary
     if json_output is False:
         output = {
             "target": target,
@@ -51,21 +52,36 @@ def scan(
         console.print("[bold green]✔ No security issues detected![/bold green]")
         return
 
-    # Detailed findings table
+    # Severity color map
+    severity_colors = {
+        "CRITICAL": "red",
+        "HIGH": "bright_red",
+        "MEDIUM": "yellow",
+        "LOW": "green"
+    }
+
+    # Detailed findings table with colored Severity
     table = Table(title=f"Findings: {target}")
     table.add_column("Rule ID", style="cyan")
-    table.add_column("Severity", style="bold red")
+    table.add_column("Severity", style="bold")
     table.add_column("Message")
     for issue in findings:
-        table.add_row(str(issue['rule']), str(issue['severity']), str(issue['message']))
+        sev = issue['severity'].upper()
+        color = severity_colors.get(sev, "white")
+        table.add_row(
+            str(issue['rule']),
+            f"[{color}]{sev}[/{color}]",
+            str(issue['message'])
+        )
     console.print(table)
 
-    # Summary table
+    # Colorful summary table
     summary_table = Table(title="Summary")
     summary_table.add_column("Severity", style="bold")
     summary_table.add_column("Count", justify="right")
     for sev, count in severity_count.items():
-        summary_table.add_row(sev, str(count))
+        color = severity_colors.get(sev, "white")
+        summary_table.add_row(f"[{color}]{sev}[/{color}]", str(count))
     console.print(summary_table)
 
     # Apply fixes if requested
@@ -90,3 +106,6 @@ def rollback(file_path: str):
 
 if __name__ == "__main__":
     app()
+
+
+
