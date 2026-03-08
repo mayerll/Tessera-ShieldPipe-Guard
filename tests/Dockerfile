@@ -1,0 +1,22 @@
+
+# 1. Use of 'latest' tag (Non-deterministic, hard to audit)
+FROM node:latest
+
+# 2. Running as ROOT (Security risk - if container is breached, attacker has root)
+USER root
+
+# 3. Hardcoded secrets (Never do this!)
+ENV API_KEY="12345-SUPER-SECRET-KEY"
+
+# 4. Using 'apt-get' without cleaning up (Increases image size/attack surface)
+RUN apt-get update && apt-get install -y vim
+
+# 5. Using ADD instead of COPY (ADD can fetch remote URLs, which is risky)
+ADD https://example.com /tmp/
+
+WORKDIR /app
+COPY . .
+
+# 6. Missing Healthcheck (Best practice for container orchestration)
+CMD ["node", "index.js"]
+
