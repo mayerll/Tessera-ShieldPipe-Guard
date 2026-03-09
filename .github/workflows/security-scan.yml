@@ -9,7 +9,7 @@ on:
 
 jobs:
   # Job 1: Unit Testing
-  validate:
+  Validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -30,7 +30,7 @@ jobs:
         run: python3 -m pytest tests/test_shieldpipe.py
 
   # Job 2: Security Scanning
-  scanning:
+  Scanning:
     needs: validate
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +74,7 @@ jobs:
           path: reports/*.json
 
   # Job 3: Final Security Gate
-  enforcement:
+  Enforcement & Report:
     needs: scanning
     runs-on: ubuntu-latest
     steps:
