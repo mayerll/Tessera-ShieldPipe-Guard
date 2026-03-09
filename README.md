@@ -9,6 +9,8 @@ It wraps industry-standard engines (**Trivy**, **Checkov**, and **Semgrep**) int
 
 ### 1. Prerequisites
 - **Python 3.10+**
+  <img width="518" height="89" alt="image" src="https://github.com/user-attachments/assets/d5533551-f42a-436d-b87d-ef929d22baae" />
+
 - **Docker Desktop** (Must be running, as scanners run in isolated containers)
 
 ### 2. Installation
