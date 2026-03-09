@@ -3,10 +3,12 @@ name: ShieldPipe Security CI
 
 on:
   push:
-    # Trigger on every push to the current branch.
+    # Trigger on every push to the current branch. 
+    # NOTE: Set to [ main, develop, master, staging, prod etc. ] to restrict scans only to the primary branch.
     branches: [ '**' ]
   pull_request:
-    # Trigger on pull requests to any branch.
+    # Trigger on pull requests to any branch. 
+    # This ensures code is scanned before it is merged into the codebase.
     branches: [ '**' ]
 
 jobs:
@@ -100,7 +102,8 @@ jobs:
           # Recursively check for Critical or High risks in the downloaded JSON files
           if grep -rqE "CRITICAL|HIGH" reports/; then
             echo "Security Gate Failed: High-risk vulnerabilities detected"
-            #exit 1
+            # UNCOMMENT the line below to stop the pipeline and block deployment on failure
+            # exit 1
           else
             echo "Security Gate Passed: Environment is safe"
           fi
