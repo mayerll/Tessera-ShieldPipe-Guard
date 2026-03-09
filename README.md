@@ -292,7 +292,7 @@ Every successful or failed run of the **ShieldPipe Security CI** pipeline genera
 1. Navigate to the **Actions** tab in your GitHub repository.
 2. Select the specific workflow run you wish to inspect.
 3. Scroll down to the **Artifacts** section at the bottom of the summary page.
-4. Click on **shieldpipe-security-reports** to download a ZIP archive containing all JSON scan results (e.g., `dockerfile-scan.json`, `terraform-scan.json`).
+4. Click on workflows in ActionCI to download a ZIP archive containing all JSON scan results (e.g., `dockerfile-scan.json`, `terraform-scan.json`).
 
 #### Artifact Specification:
 - **Format**: Structured JSON.
