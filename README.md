@@ -423,6 +423,9 @@ Every successful or failed run of the **ShieldPipe Security CI** pipeline genera
 - **Retention**: Reports are stored for 90 days by default (compliant with standard audit cycles).
 - **Accessibility**: Available even if the **Security Gate** fails, ensuring you have the data needed to fix the reported issues.
 
+Click the Download button within the red-highlighted area to get the security scan reports.
+
+<img width="1928" height="977" alt="image" src="https://github.com/user-attachments/assets/fbdd7a18-1dea-4f95-b6a3-4b471d372cb7" />
 
 
 ## Architecture and Workflow
