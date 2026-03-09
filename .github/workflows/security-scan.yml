@@ -8,59 +8,79 @@ on:
     branches: [ main ]
 
 jobs:
-  security-pipeline:
+  # Job 1: Unit Testing
+  validate:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Initialize
-      - name: Checkout Source Code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Python Environment
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install System Dependencies
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install pytest typer rich checkov semgrep
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 2. Validation Phase (Unit Tests)
-      - name: Run Unit Tests (Pytest)
-        id: unit_tests
+      - name: Run Unit Tests
         run: python3 -m pytest tests/test_shieldpipe.py
 
-      # 3. Preparation Phase
-      - name: Initialize Report Directory
+  # Job 2: Security Scanning (Runs only if validation passes)
+  scanning:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create Reports Directory
         run: mkdir -p reports
 
-      # 4. Scanning Phase (Individual Targets)
       - name: Scan Dockerfile
         run: python3 main.py scan ./tests/Dockerfile --json > reports/dockerfile-scan.json
         continue-on-error: true
 
-      # This ensures we pull the image first to avoid timeout in the next step
-      - name: Pull Base Image for Scan
-        run: docker pull python:3.9-slim
-
-      - name: Scan Terraform Files
+      - name: Scan Terraform
         run: python3 main.py scan ./tests/main.tf --json > reports/terraform-scan.json
         continue-on-error: true
 
-      - name: Scan Python Dependencies
+      - name: Scan Dependencies
         run: python3 main.py scan ./tests/requirements.txt --json > reports/dependencies-scan.json
         continue-on-error: true
 
       - name: Scan Container Image
-        run: python3 main.py scan python:3.9-slim --json > reports/image-scan.json
+        run: |
+          docker pull python:3.9-slim
+          python3 main.py scan python:3.9-slim --json > reports/image-scan.json
         continue-on-error: true
 
-      # 5. Enforcement Phase (Gatekeeper)
-      - name: Security Gate (Critical/High Check)
-        id: security_gate
+      - name: Upload Raw Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-reports
+          path: reports/*.json
+
+  # Job 3: Final Security Gate & Reporting
+  enforcement:
+    needs: scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: raw-reports
+          path: reports
+
+      - name: Security Gate Check
         run: |
           if grep -qE "CRITICAL|HIGH" reports/*.json; then
             echo "Security Gate Failed: High-risk vulnerabilities detected"
@@ -69,11 +89,10 @@ jobs:
             echo "Security Gate Passed: Environment is safe"
           fi
 
-      # 6. Archive Phase
-      - name: Upload Scan Artifacts
+      - name: Publish Final Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shieldpipe-reports
+          name: ChangE-Final-Security-Reports
           path: reports/*.json
 
