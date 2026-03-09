@@ -9,7 +9,7 @@ on:
 
 jobs:
   # Job 1: Unit Testing
-  Validate:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -29,8 +29,8 @@ jobs:
       - name: Run Unit Tests
         run: python3 -m pytest tests/test_shieldpipe.py
 
-  # Job 2: Security Scanning (Runs only if validation passes)
-  Scanning:
+  # Job 2: Security Scanning
+  scanning:
     needs: validate
     runs-on: ubuntu-latest
     steps:
@@ -43,25 +43,29 @@ jobs:
           python-version: '3.11'
 
       - name: Create Reports Directory
-        run: mkdir -p reports
+        run: mkdir -p reports && chmod 777 reports
 
       - name: Scan Dockerfile
-        run: python3 main.py scan ./tests/Dockerfile --json > reports/dockerfile-scan.json
+        # Using 'tee' ensures output goes to file AND logs; 2>&1 catches errors
+        run: python3 main.py scan ./tests/Dockerfile --json 2>&1 | tee reports/dockerfile-scan.json
         continue-on-error: true
 
       - name: Scan Terraform
-        run: python3 main.py scan ./tests/main.tf --json > reports/terraform-scan.json
+        run: python3 main.py scan ./tests/main.tf --json 2>&1 | tee reports/terraform-scan.json
         continue-on-error: true
 
       - name: Scan Dependencies
-        run: python3 main.py scan ./tests/requirements.txt --json > reports/dependencies-scan.json
+        run: python3 main.py scan ./tests/requirements.txt --json 2>&1 | tee reports/dependencies-scan.json
         continue-on-error: true
 
       - name: Scan Container Image
         run: |
           docker pull python:3.9-slim
-          python3 main.py scan python:3.9-slim --json > reports/image-scan.json
+          python3 main.py scan python:3.9-slim --json 2>&1 | tee reports/image-scan.json
         continue-on-error: true
+
+      - name: Debug Reports (Verify content)
+        run: ls -lh reports/ && head -n 5 reports/*.json
 
       - name: Upload Raw Results
         uses: actions/upload-artifact@v4
@@ -69,8 +73,8 @@ jobs:
           name: raw-reports
           path: reports/*.json
 
-  # Job 3: Final Security Gate & Reporting
-  Enforcement:
+  # Job 3: Final Security Gate
+  enforcement:
     needs: scanning
     runs-on: ubuntu-latest
     steps:
@@ -82,17 +86,11 @@ jobs:
 
       - name: Security Gate Check
         run: |
+          # Use grep -E to catch findings in any of the captured JSON files
           if grep -qE "CRITICAL|HIGH" reports/*.json; then
             echo "Security Gate Failed: High-risk vulnerabilities detected"
             exit 1
           else
             echo "Security Gate Passed: Environment is safe"
           fi
-
-      - name: Publish Final Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ChangE-Final-Security-Reports
-          path: reports/*.json
 
