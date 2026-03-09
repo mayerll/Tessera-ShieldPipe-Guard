@@ -51,7 +51,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-<img width="592" height="259" alt="image" src="https://github.com/user-attachments/assets/f202fda5-d506-4e71-961f-3155b2e82902" />
+<img width="507" height="302" alt="image" src="https://github.com/user-attachments/assets/a1e014fc-09fe-45fc-861e-f6a5b9cea47a" />
 
 
 ## 2. Scanning Targets
