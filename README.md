@@ -103,7 +103,28 @@ python3 main.py scan ./tests/requirements.txt
 # Scan a pre-built (baked) Docker image for OS-level vulnerabilities
 python3 main.py scan python:3.9-slim
 ```
+Please refer to the logs listed below:
+```bash
+# Scan a local Dockerfile for misconfigurations
+python3 main.py scan ./tests/Dockerfile
+```
 
+<img width="1270" height="614" alt="image" src="https://github.com/user-attachments/assets/e0357d20-267f-4e3b-bc89-2d3fab0c332b" />
+
+```bash
+# Scan a local Dockerfile for misconfigurations
+python3 main.py scan ./tests/main.tf
+```
+
+```bash
+# Scan Infrastructure as Code (Terraform) for security gaps
+python3 main.py scan ./tests/requirements.txt
+```
+
+```bash
+# Scan a pre-built (baked) Docker image for OS-level vulnerabilities
+python3 main.py scan python:3.9-slim
+```
 ### Structured JSON Output
 
 Use the --json flag to generate machine-readable data. This output includes a full list of findings and a severity summary, making it easy for scripts to parse and enforce security gates.
@@ -111,13 +132,20 @@ Use the --json flag to generate machine-readable data. This output includes a fu
 ```bash
 # Generate JSON report for Dockerfile
 python3 main.py scan ./tests/Dockerfile --json
+```
 
+<img width="1070" height="927" alt="image" src="https://github.com/user-attachments/assets/d7753035-90d0-4c5b-9b67-9d73ca3864f8" />
+```bash
 # Generate JSON report for Terraform
 python3 main.py scan ./tests/main.tf --json
+```
 
+```bash
 # Generate JSON report for Dependencies
 python3 main.py scan ./tests/requirements.txt --json
+```
 
+```bash
 # Generate JSON report for a Container Image
 python3 main.py scan python:3.9-slim --json
 ```
