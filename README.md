@@ -19,6 +19,7 @@ It wraps industry-standard engines (**Trivy**, **Checkov**, and **Semgrep**) int
 # Clone the repository
 git clone git@github.com:mayerll/Tessera-ShieldPipe-Guard.git
 cd Tessera-ShieldPipe-Guard
+```
 
 # Initialize environment
 python3 -m venv venv
