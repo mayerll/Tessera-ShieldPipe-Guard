@@ -428,6 +428,11 @@ Click the Download button within the red-highlighted area to get the security sc
 
 <img width="1928" height="977" alt="image" src="https://github.com/user-attachments/assets/fbdd7a18-1dea-4f95-b6a3-4b471d372cb7" />
 
+Security Scan Report:
+
+<img width="1358" height="1070" alt="image" src="https://github.com/user-attachments/assets/4f503667-f043-4e22-9748-df00d116ce08" />
+
+
 
 ## Architecture Design and Workflow
 
