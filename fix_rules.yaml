@@ -1,21 +1,59 @@
 
 rules:
-  - id: fix-s3-public-read
-    patterns:
-      - pattern: acl = $VALUE
-      - metavariable-regex:
-          metavariable: $VALUE
-          regex: ".*public-read.*"
-    fix: acl = "private"
-    message: "Changing public S3 ACL to private."
-    severity: WARNING
-    languages: [hcl]
-
-  - id: fix-docker-root
-    patterns:
-      - pattern: USER root
-    fix: USER node
-    message: "Switching root user to 'node' user."
-    severity: WARNING
+  # 1. Fix 'latest' tag (DS-0001)
+  - id: DS-0001-latest-tag
     languages: [dockerfile]
+    message: "Avoid using :latest tag. Pinning to a specific version for stability."
+    pattern: "FROM $IMAGE:latest"
+    fix: "FROM $IMAGE:20-slim"
+    severity: WARNING
+
+  # 2. Prevent running as ROOT (DS-0002)
+  # Replaces 'USER root' with user creation and switching
+  - id: DS-0002-no-root-user
+    languages: [dockerfile]
+    message: "Container should not run as root. Creating and switching to appuser."
+    pattern: "USER root"
+    fix: |
+      RUN useradd -u 1001 appuser
+      USER appuser
+    severity: ERROR
+
+  # 3. Hardcoded Secrets (DS-0031)
+  # Replaces sensitive values with an environment variable placeholder
+  - id: DS-0031-hardcoded-secrets
+    languages: [dockerfile]
+    message: "Hardcoded API Key detected. Replacing with an environment variable placeholder."
+    pattern: 'ENV API_KEY="$VAL"'
+    fix: 'ENV API_KEY=${API_KEY_SECRET}'
+    severity: CRITICAL
+
+  # 4. Optimize apt-get (DS-0029)
+  # Adds security flags and cleans up the cache to reduce image size
+  - id: DS-0029-apt-get-clean
+    languages: [dockerfile]
+    message: "Optimizing apt-get. Adding --no-install-recommends and cleaning cache."
+    pattern: "RUN apt-get update && apt-get install -y $PKG"
+    fix: "RUN apt-get update && apt-get install -y --no-install-recommends $PKG && rm -rf /var/lib/apt/lists/*"
+    severity: WARNING
+
+  # 5. Use COPY instead of ADD (DS-0005)
+  # Replaces risky ADD (remote URL fetch) with a safer RUN curl approach
+  - id: DS-0005-use-copy-not-add
+    languages: [dockerfile]
+    message: "Prefer COPY over ADD. Remote files should be downloaded via curl/wget and verified."
+    pattern: "ADD $URL $DEST"
+    fix: "RUN curl -fsSL $URL -o $DEST"
+    severity: WARNING
+
+  # 6. Add Missing Healthcheck (DS-0026)
+  # Injects a HEALTHCHECK instruction right before the CMD
+  - id: DS-0026-add-healthcheck
+    languages: [dockerfile]
+    message: "Missing HEALTHCHECK. Adding a default health check."
+    pattern: "CMD [$EXEC, $FILE]"
+    fix: |
+      HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
+      CMD [$EXEC, $FILE]
+    severity: INFO
 
