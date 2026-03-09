@@ -74,7 +74,7 @@ jobs:
           path: reports/*.json
 
   # Job 3: Final Security Gate
-  Enforcement & Report:
+  Enforcement:
     needs: scanning
     runs-on: ubuntu-latest
     steps:
