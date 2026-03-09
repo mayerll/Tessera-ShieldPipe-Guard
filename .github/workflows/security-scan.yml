@@ -3,18 +3,12 @@ name: ShieldPipe Security CI
 
 on:
   push:
-    branches: [ main ]
+    # Trigger on every push to the current branch.
+    branches: [ '**' ]
   pull_request:
-    branches: [ main ]
-    #on:
-    #  push:
-    #    # NOTE: Set to '**' to run the scan on every push to the current branch.
-    #    # To restrict to only specific branches, use: branches: [ main, develop,
-    #    # staging, prod, etc. ]
-    #    branches: [ '**' ]
-    #  pull_request:
-    #    branches: [ '**' ]
-    #
+    # Trigger on pull requests to any branch.
+    branches: [ '**' ]
+
 jobs:
   # Job 1: Unit Testing
   Validate:
@@ -40,7 +34,7 @@ jobs:
 
   # Job 2: Security Scanning
   Scanning:
-    needs: validate
+    needs: Validate  # Must match the case of the Job ID above
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,12 +44,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        # Essential: main.py requires typer/rich to be installed in this runner
+        run: |
+          python -m pip install --upgrade pip
+          pip install typer rich checkov semgrep
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Create Reports Directory
         run: mkdir -p reports && chmod 777 reports
 
       - name: Scan Dockerfile
-        # Using 'tee' ensures output goes to file AND logs; 2>&1 catches errors
         run: python3 main.py scan ./tests/Dockerfile --json 2>&1 | tee reports/dockerfile-scan.json
         continue-on-error: true
 
@@ -73,7 +74,7 @@ jobs:
           python3 main.py scan python:3.9-slim --json 2>&1 | tee reports/image-scan.json
         continue-on-error: true
 
-      - name: Debug Reports (Verify content)
+      - name: Debug Reports Output
         run: ls -lh reports/ && head -n 5 reports/*.json
 
       - name: Upload Raw Results
@@ -84,7 +85,7 @@ jobs:
 
   # Job 3: Final Security Gate
   Enforcement:
-    needs: scanning
+    needs: Scanning  # Must match the case of the Job ID above
     runs-on: ubuntu-latest
     steps:
       - name: Download Reports
@@ -92,11 +93,12 @@ jobs:
         with:
           name: raw-reports
           path: reports
+          merge-multiple: true
 
       - name: Security Gate Check
         run: |
-          # Use grep -E to catch findings in any of the captured JSON files
-          if grep -qE "CRITICAL|HIGH" reports/*.json; then
+          # Recursively check for Critical or High risks in the downloaded JSON files
+          if grep -rqE "CRITICAL|HIGH" reports/; then
             echo "Security Gate Failed: High-risk vulnerabilities detected"
             exit 1
           else
