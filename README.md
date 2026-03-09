@@ -29,6 +29,7 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+pip install --upgrade pip
 ```
 
 Then your environment is now fully configured. Tessera ShieldPipe Guard is ready to use via the CLI.
@@ -50,6 +51,7 @@ source venv/bin/activate
 
 # Install required dependencies
 pip install -r requirements.txt
+pip install --upgrade pip
 ```
 
 <img width="507" height="302" alt="image" src="https://github.com/user-attachments/assets/a1e014fc-09fe-45fc-861e-f6a5b9cea47a" />
@@ -187,6 +189,35 @@ python3 main.py scan python:3.9-slim --json
 Users can preview security patches before they are applied to the source code. By using the `--dry-run` flag, ShieldPipe simulates the remediation process and generates a unified diff in the terminal, showing exactly which lines will be modified, added, or removed. 
 
 This allows developers to audit security changes for accuracy and compatibility before committing to a permanent fix.
+Firstly, developers need to check the file fix_rules.yaml, please refer to the introduction listed below:
+
+### Customizable Remediation Engine (fix_rules.yaml)
+
+ShieldPipe's remediation logic is decoupled from the core scanning engine via `fix_rules.yaml`. This design acknowledges that security remediation is not "one size fits all" and allows organizations to tailor fixes to their specific internal security policies.
+
+#### Key Benefits of Rule-Based Remediation
+
+1. **Organizational Policy Alignment**: Different companies have different standards. While one organization may require Alpine-based images, another may mandate hardened RHEL-based images. ShieldPipe allows SecOps teams to define exactly how a vulnerability should be patched to meet their unique compliance requirements.
+
+2. **Compliance as Code**: By storing remediation logic in a version-controlled YAML file, the "Rules of Engagement" for security fixes become transparent, auditable, and easy to update across the entire engineering organization.
+
+3. **Decoupled Logic**: Separating "Detection" from "Remediation" means you can update your patching strategy (e.g., upgrading a global dependency version) without needing to modify the underlying Python source code or redeploy the tool.
+
+4. **Risk Mitigation**: This architecture ensures that ShieldPipe is not a "black box." Security teams have full control over the automated modifications made to the codebase, preventing automated patches from breaking proprietary internal configurations.
+
+---
+
+#### Example: Tailoring a Rule
+If your company requires a specific internal mirror for apt-get, you simply update the `fix` pattern in `fix_rules.yaml`:
+
+```yaml
+  - id: DS-0029-internal-mirror
+    languages: [dockerfile]
+    pattern: "RUN apt-get update"
+    fix: "RUN sed -i 's/deb.debian.org/://internal-mirror.company.com' /etc/apt/sources.list && apt-get update"
+```
+
+Then we can start the remediation.
 
 ### Preview Remediation
 Run these commands to view the proposed security improvements for each target type:
