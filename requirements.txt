@@ -1,8 +1,15 @@
 
+# CLI
 typer==0.24.1
 rich==13.0.0
+
+# Security Engines (Local wrappers)
 checkov==3.2.0
 semgrep==1.60.0
-pytest==9.0.2
 
+# File Processing
+pyyaml==6.0.1
+
+# Testing
+pytest==9.0.2
 
