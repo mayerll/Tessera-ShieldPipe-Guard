@@ -195,6 +195,26 @@ python3 main.py scan ./tests/main.tf --dry-run
 python3 main.py scan ./tests/requirements.txt --dry-run 
 ```
 
+Logs:
+
+```bash
+# Preview fixes for Dockerfile misconfigurations
+python3 main.py scan ./tests/Dockerfile --dry-run 
+```
+
+<img width="1336" height="1004" alt="image" src="https://github.com/user-attachments/assets/9b527ba9-2018-4e5f-bc98-9e6dccc2fb2a" />
+<img width="1336" height="1004" alt="image" src="https://github.com/user-attachments/assets/5575dd91-a475-4c9a-8647-8b7e75426ce2" />
+
+
+```bash
+# Preview security hardening for Terraform files
+python3 main.py scan ./tests/main.tf --dry-run 
+```
+```bash
+# Preview version upgrades for Python dependencies
+python3 main.py scan ./tests/requirements.txt --dry-run 
+```
+
 ## 4. Automatic Remediation (Fix)
 
 ShieldPipe can automatically apply security patches and hardening configurations directly to your source files. When the `--fix` flag is used, the tool executes a "Safe-Patching" workflow: it first creates an atomic backup of the target file in the `.shieldpipe_backups` directory and then applies the remediation logic defined in `fix_rules.yaml`.
