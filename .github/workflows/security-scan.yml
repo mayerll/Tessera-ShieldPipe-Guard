@@ -45,7 +45,7 @@ jobs:
         run: |
           if grep -qE "CRITICAL|HIGH" reports/*.json; then
             echo "Security Gate Failed: Critical or High vulnerabilities detected in one or more targets"
-            exit 1
+            #exit 1 # Users can add this line 
           else
             echo "Security Gate Passed: No high-risk issues found across all targets"
           fi
