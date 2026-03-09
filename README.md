@@ -210,6 +210,11 @@ python3 main.py scan ./tests/Dockerfile --dry-run
 # Preview security hardening for Terraform files
 python3 main.py scan ./tests/main.tf --dry-run 
 ```
+
+<img width="1352" height="786" alt="image" src="https://github.com/user-attachments/assets/b46854ef-926c-486b-9326-ca22db9dfd20" />
+<img width="1352" height="786" alt="image" src="https://github.com/user-attachments/assets/1a9f907d-b58e-4366-ba04-e31c5bfa7622" />
+
+
 ```bash
 # Preview version upgrades for Python dependencies
 python3 main.py scan ./tests/requirements.txt --dry-run 
