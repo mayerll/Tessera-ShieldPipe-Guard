@@ -470,11 +470,25 @@ The implementation of ShieldPipe is based on three core technical pillars design
 
 ## Roadmap and Bug List (Future Improvements)
 
-1. **Input Validation**: Add strict validation for target paths to prevent directory traversal or malformed image names. This includes verifying that local files exist before initiating expensive Docker container processes.
-2. **REST API Integration**: Wrap the core orchestration logic in a **FastAPI** layer to support remote webhook triggers, centralized security monitoring, and integration with external security dashboards.
-3. **Structured Remediation**: Currently, `--fix` and `--dry-run` provide human-readable terminal diffs. Future versions will support structured JSON reporting for all remediation actions taken to facilitate automated security auditing.
-4. **Post-Fix Validation**: Integrate automated syntax checks such as `terraform validate` or `docker build --dry-run` immediately after a patch is applied to ensure zero syntax regressions in the codebase.
-5. **Enhanced Rollback History**: Expand the current single-version rollback system into a multi-version history tracking system, allowing users to revert to any previous state stored in a local metadata store.
-6. **Command Logic Check**: Implement a validator to prevent the execution of conflicting flags (e.g., ensuring that `--fix` and `--json` do not run simultaneously without a specifically defined output schema for remediation).
+1. **System Help and Input Validation**: 
+   - Enhance the built-in help system with detailed subcommand documentation.
+   - Implement strict input sanitization to prevent Directory Traversal attacks and handle malformed container image names. 
+   - Add pre-execution checks to verify local file existence before initiating resource-heavy Docker processes.
 
+2. **REST API and Multi-Interface Support**: 
+   - Currently, remediation features (fix, rollback, dry-run) are CLI-only. 
+   - Future versions will decouple the core orchestration logic and wrap it in a **FastAPI** layer. This will support remote Webhook triggers, centralized security monitoring, and integration with external dashboards.
+
+3. **Structured Remediation Reporting**: 
+   - Transition from human-readable terminal diffs to structured JSON reporting for the --fix and --dry-run flags. This is essential for automated security auditing and multi-tool interoperability.
+
+4. **Post-Fix Automated Validation**: 
+   - Integrate automated syntax verification (e.g., `terraform validate` or `docker build --dry-run`) immediately after a patch is applied. This ensures the codebase remains functional and prevents syntax regressions.
+
+5. **Enhanced Rollback History**: 
+   - Expand the current "single-version" backup system into a multi-version history tracking system. 
+   - Use a local metadata store (e.g., SQLite or structured JSON) to allow users to revert to any previous historical state based on timestamps and unique IDs.
+
+6. **Command Logic and Conflict Resolution**: 
+   - Implement a command validator to prevent conflicting flag execution. For example, ensuring --fix and --json do not run simultaneously without a specifically defined remediation schema, ensuring predictable behavior in CI/CD pipelines.
 
