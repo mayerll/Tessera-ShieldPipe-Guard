@@ -348,7 +348,10 @@ Rollback successful: ./tests/Dockerfile restored.
 
 ## 6. GitHub Actions CI/CD Integration
 
-ShieldPipe is designed to be "CI-First." The included GitHub Actions workflow provides a multi-stage security pipeline that automatically validates, scans, and enforces security policies on every push or pull request.
+ShieldPipe is designed to be "CI-First." The included GitHub Actions workflow provides a multi-stage security pipeline that automatically validates, scans, and enforces security policies on every push or pull request. 
+
+[https://github.com/mayerll/Tessera-ShieldPipe-Guard/actions](https://github.com/mayerll/Tessera-ShieldPipe-Guard/actions)
+
 
 ### Pipeline Architecture
 The workflow is divided into three isolated jobs to ensure modularity and performance:
