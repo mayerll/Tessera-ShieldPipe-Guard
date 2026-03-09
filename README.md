@@ -171,6 +171,10 @@ python3 main.py scan ./tests/requirements.txt --json
 python3 main.py scan python:3.9-slim --json
 ```
 
+<img width="1524" height="786" alt="image" src="https://github.com/user-attachments/assets/cc7fcd18-16fd-478c-9adc-496c8b71d284" />
+<img width="1524" height="786" alt="image" src="https://github.com/user-attachments/assets/a912e320-ed6f-44ac-b8b3-59a325436697" />
+
+
 ## 3. Proposed Fixes (Dry-run)
 
 Users can preview security patches before they are applied to the source code. By using the `--dry-run` flag, ShieldPipe simulates the remediation process and generates a unified diff in the terminal, showing exactly which lines will be modified, added, or removed. 
