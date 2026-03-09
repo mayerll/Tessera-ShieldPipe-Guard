@@ -1,35 +1,84 @@
-# iac-security-tool
-pip3 install typer semgrep
-brew install hadolint
 
-pip install typer rich semgrep checkov
+# Tessera ShieldPipe (Chang'e) Security CI
 
-# Run scan only
-python3 main.py ./tests/main.tf
+ShieldPipe is a hybrid security automation orchestrator designed to scan and remediate security misconfigurations across Infrastructure as Code (IaC), Dockerfiles, and Python dependencies. 
 
-# Run scan and apply fixes
-python3 main.py ./tests/main.tf --fix
+It wraps industry-standard engines (**Trivy**, **Checkov**, and **Semgrep**) into a unified developer-friendly interface, providing automated "safe-patching" capabilities.
+
+## Quick Start
+
+### 1. Prerequisites
+- **Python 3.10+**
+- **Docker Desktop** (Must be running, as scanners run in isolated containers)
+
+### 2. Installation
+```bash
+# Clone the repository
+git clone git@github.com:mayerll/Tessera-ShieldPipe-Guard.git
+cd Tessera-ShieldPipe-Guard
+
+# Initialize environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+## Usage Guide
+
+### 1. Installation and Environment Setup
+Run these commands to initialize your local development environment:
+
+```bash
+# Clone the repository
+git clone git@github.com:mayerll/Tessera-ShieldPipe-Guard.git
+cd Tessera-ShieldPipe-Guard
+
+# Initialize virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required dependencies
+pip install -r requirements.txt
+
+## 2. Scanning Targets
+Detect security vulnerabilities in Dockerfiles, Terraform configurations, and Python dependencies.
+
+```bash
+# Standard scans
+python3 main.py scan ./tests/Dockerfile
+python3 main.py scan ./tests/main.tf
+python3 main.py scan ./tests/requirements.txt
+python3 main.py scan python:3.9-slim
+
+# Structured JSON output (for CI/CD integration)
+python3 main.py scan ./tests/Dockerfile --json
+python3 main.py scan ./tests/main.tf --json
+python3 main.py scan ./tests/requirements.txt --json
+python3 main.py scan python:3.9-slim --json
 
 
-# ShieldPipe Security Automation
+## 3. Proposed Fixes (Dry-run)
+View proposed code changes in unified diff format without modifying the actual source files.
 
-## Setup
-1. **Prerequisites**: Python 3.9+, Docker Desktop.
-2. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
+```bash
+python3 main.py scan ./tests/Dockerfile --dry-run 
+python3 main.py scan ./tests/main.tf --dry-run 
+python3 main.py scan ./tests/requirements.txt --dry-run 
 
+## 4. Automatic Remediation (Fix)
+Automatically apply security patches based on fix_rules.yaml. This command creates an automatic backup before modification.
 
-Usage & Setup (README.md snippet)
-Quick Start
-Environment: python3 -m venv venv && source venv/bin/activate
-Install: pip3 install -r requirements.txt
-Scan: python3 main.py scan ./tests/main.tf
-Dry-Run: python3 main.py scan ./tests/main.tf --dry-run
-Fix: python3 main.py scan ./tests/main.tf --fix
-Rollback: python3 main.py rollback ./tests/main.tf
-Design Notes
-Hybrid Orchestration: Uses Checkov (Python-native) for speed on IaC and Docker-encapsulated Trivy for OS-agnostic Image/Dockerfile scanning. [INDEX: 1]
-Portable Remediation: Semgrep is run via Docker to ensure Abstract Syntax Tree (AST) matching works even on legacy systems like macOS 10.15. [INDEX: 1]
-Safety: All fixes trigger an automatic local backup in .shieldpipe_backups/. [INDEX: 1]
-Everything is now synchronized. You can ZIP the shieldpipe/ folder and submit it with confidence.
+```bash
+python3 main.py scan ./tests/Dockerfile --fix  
+python3 main.py scan ./tests/main.tf --fix 
+python3 main.py scan ./tests/requirements.txt --fix 
+
+## 5. Rollback
+Restore a file to its state before the last fix operation using the internal backup directory.
+
+```bash
+python3 main.py rollback ./tests/Dockerfile
+python3 main.py rollback ./tests/main.tf 
+python3 main.py rollback ./tests/requirements.txt
+
