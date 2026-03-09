@@ -1,6 +1,7 @@
 
-# Tessera ShieldPipe (Chang'e) Security CI
+# Tessera ShieldPipe (Chang'e) Security CI 
 
+# Introduction
 
 ShieldPipe is a hybrid security automation orchestrator designed to scan and remediate security misconfigurations across Infrastructure as Code (IaC), Dockerfiles, and Python dependencies. 
 
