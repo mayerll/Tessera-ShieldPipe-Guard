@@ -1,6 +1,7 @@
 
 # Tessera ShieldPipe (Chang'e) Security CI
 
+
 ShieldPipe is a hybrid security automation orchestrator designed to scan and remediate security misconfigurations across Infrastructure as Code (IaC), Dockerfiles, and Python dependencies. 
 
 It wraps industry-standard engines (**Trivy**, **Checkov**, and **Semgrep**) into a unified developer-friendly interface, providing automated "safe-patching" capabilities.
@@ -15,11 +16,11 @@ It wraps industry-standard engines (**Trivy**, **Checkov**, and **Semgrep**) int
 - **Docker Desktop** (Must be running, as scanners run in isolated containers)
 
 ### 2. Installation
+
 ```bash
 # Clone the repository
 git clone git@github.com:mayerll/Tessera-ShieldPipe-Guard.git
 cd Tessera-ShieldPipe-Guard
-```
 
 # Initialize environment
 python3 -m venv venv
@@ -27,12 +28,14 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+```
 
 Then your environment is now fully configured. Tessera ShieldPipe Guard is ready to use via the CLI.
 
 ## Usage Guide
 
 ### 1. Installation and Environment Setup
+
 Run these commands to initialize your local development environment:
 
 ```bash
@@ -46,6 +49,7 @@ source venv/bin/activate
 
 # Install required dependencies
 pip install -r requirements.txt
+```
 
 <img width="592" height="259" alt="image" src="https://github.com/user-attachments/assets/f202fda5-d506-4e71-961f-3155b2e82902" />
 
@@ -61,21 +65,25 @@ To showcase the capabilities of ShieldPipe, the tests/ directory contains a deli
 ### Insecure Test Artifacts Overview
 
 #### 1. Dockerfile (Container Configuration)
+
 Vulnerability: Uses the :latest tag, which is non-deterministic and makes audits difficult.
 Risk: It runs as the root user, increasing the attack surface if the container is breached.
 Misconfiguration: Lacks a HEALTHCHECK and uses apt-get without cleaning up the cache, leading to bloated and insecure images.
 
 ####  2. main.tf (Infrastructure as Code)
+
 S3 Bucket: Configured with a public-read ACL, simulating a data leak scenario.
 Security Group: Contains an ingress rule allowing SSH (Port 22) from 0.0.0.0/0, exposing the instance to global brute-force attacks.
 EBS Volume: Set to encrypted = false, failing data-at-rest compliance standards.
 Hardcoded Secrets: Contains a plaintext password within an aws_db_instance block.
 
 ####  3. requirements.txt (Python Dependencies)
+
 Flask 0.12.1: A legacy version vulnerable to multiple Denial of Service (DoS) attacks and session cookie disclosure.
 Requests 2.20.0: Vulnerable to CVE-2018-18074, which can lead to unintended credential leakage during cross-domain redirects.
 
 ####  4. python:3.9-slim (Baked Docker Image)
+
 Vulnerability: This represents a pre-built image that may contain OS-level vulnerabilities (CVEs) in its system libraries (like openssl or libc).
 Detection: ShieldPipe triggers an image scan to identify vulnerabilities that exist within the binary layers, even if the Dockerfile itself appears clean.
 
@@ -94,8 +102,10 @@ python3 main.py scan ./tests/requirements.txt
 
 # Scan a pre-built (baked) Docker image for OS-level vulnerabilities
 python3 main.py scan python:3.9-slim
+```
 
 ### Structured JSON Output
+
 Use the --json flag to generate machine-readable data. This output includes a full list of findings and a severity summary, making it easy for scripts to parse and enforce security gates.
 
 ```bash
@@ -110,7 +120,7 @@ python3 main.py scan ./tests/requirements.txt --json
 
 # Generate JSON report for a Container Image
 python3 main.py scan python:3.9-slim --json
-
+```
 
 ## 3. Proposed Fixes (Dry-run)
 
@@ -130,12 +140,7 @@ python3 main.py scan ./tests/main.tf --dry-run
 
 # Preview version upgrades for Python dependencies
 python3 main.py scan ./tests/requirements.txt --dry-run 
-
-
-```bash
-python3 main.py scan ./tests/Dockerfile --dry-run 
-python3 main.py scan ./tests/main.tf --dry-run 
-python3 main.py scan ./tests/requirements.txt --dry-run 
+```
 
 ## 4. Automatic Remediation (Fix)
 
@@ -155,11 +160,7 @@ python3 main.py scan ./tests/main.tf --fix
 
 # Automatically upgrade vulnerable Python dependencies in requirements.txt
 python3 main.py scan ./tests/requirements.txt --fix 
-
-```bash
-python3 main.py scan ./tests/Dockerfile --fix  
-python3 main.py scan ./tests/main.tf --fix 
-python3 main.py scan ./tests/requirements.txt --fix 
+```
 
 ## 5. Rollback
 
@@ -179,11 +180,7 @@ python3 main.py rollback ./tests/main.tf
 
 # Revert version upgrades to requirements.txt
 python3 main.py rollback ./tests/requirements.txt
-
-```bash
-python3 main.py rollback ./tests/Dockerfile
-python3 main.py rollback ./tests/main.tf 
-python3 main.py rollback ./tests/requirements.txt
+```
 
 ### Rollback Confirmation
 
@@ -191,6 +188,7 @@ When a rollback is successful, the CLI provides immediate confirmation:
 
 ```text
 Rollback successful: ./tests/Dockerfile restored.
+```
 
 ## 6. GitHub Actions CI/CD Integration
 
@@ -284,6 +282,7 @@ jobs:
           else
             echo "Security Gate Passed: No high-risk issues found"
           fi
+```
 
 ### Artifact Retention and Downloads
 
@@ -320,7 +319,7 @@ graph TD
     J --> K[Backup Original File]
     K --> L[Apply fix_rules.yaml]
     L --> M[Modified Secure File]
-
+```
 
 ### Process Flow
 
