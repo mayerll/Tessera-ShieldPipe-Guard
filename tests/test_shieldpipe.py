@@ -1,50 +1,89 @@
 
-import pytest
+import sys
 import os
+import pytest
+from typer.testing import CliRunner
+
+# Add the project root to sys.path so 'engine' and 'main' are discoverable
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from engine.scanner import SecurityScanner
 from engine.remediator import Remediator
+from main import app
 
-# 1. Test the Scanner
+runner = CliRunner()
+
+# ==========================================
+# 1. SCANNER TESTS
+# ==========================================
+
 def test_dockerfile_scanner():
-    """Verify that Trivy detects issues in the Dockerfile."""
+    """Verify that Trivy detects critical/high issues in the Dockerfile."""
     scanner = SecurityScanner("./tests/Dockerfile")
     findings = scanner.run()
-    
-    # Check for specific rule IDs we expect to find
+
     rule_ids = [f['rule'] for f in findings]
+    # Check for specific Trivy Docker IDs
     assert "DS-0001" in rule_ids  # Latest tag
     assert "DS-0002" in rule_ids  # Root user
+    assert any(f['severity'] in ["HIGH", "CRITICAL"] for f in findings)
 
-def test_terraform_scanner():
-    """Verify that Checkov detects issues in the TF file."""
-    scanner = SecurityScanner("./tests/main.tf")
+def test_requirements_scanner():
+    """Verify that Trivy detects CVEs in requirements.txt."""
+    scanner = SecurityScanner("./tests/requirements.txt")
     findings = scanner.run()
-    
-    rule_ids = [f['rule'] for f in findings]
-    # Checkov IDs for S3 Public and EBS Encryption
-    assert any("CKV_AWS_19" in rid or "CKV_AWS_20" in rid for rid in rule_ids)
 
-# 2. Test the Remediator (Dry Run)
-def test_remediator_dry_run():
-    """Verify that Semgrep proposes fixes without changing the file."""
+    assert len(findings) > 0
+    # Ensure it's picking up Flask/Requests related CVEs
+    messages = [f['message'].lower() for f in findings]
+    assert any("flask" in msg or "requests" in msg for msg in messages)
+
+# ==========================================
+# 2. REMEDIATOR TESTS (DRY-RUN)
+# ==========================================
+
+def test_remediator_dockerfile_dry_run():
+    """Verify Semgrep proposes changes to Dockerfile without touching the file."""
     remediator = Remediator("./tests/Dockerfile")
-    # Get modification time before run
     mtime_before = os.path.getmtime("./tests/Dockerfile")
-    
+
     results = remediator.apply_fixes(dry_run=True)
-    
-    # Ensure it proposed a diff
-    assert any("Proposed Diff" in str(res) for res in results)
-    # Ensure file was NOT modified
+
+    # Check that a diff was actually proposed in the output
+    combined_output = "".join(results)
+    assert "Proposed Diff" in combined_output
+    assert "FROM node:20-slim" in combined_output
+
+    # Integrity check: Ensure file was NOT modified on disk
     assert os.path.getmtime("./tests/Dockerfile") == mtime_before
 
-# 3. Test Rule Matching for Requirements
-def test_requirements_fix_match():
-    """Verify that our 'generic' rules match vulnerable python packages."""
+def test_remediator_requirements_match():
+    """Verify that 'generic' rules in fix_rules.yaml match the text file."""
     remediator = Remediator("./tests/requirements.txt")
     results = remediator.apply_fixes(dry_run=True)
-    
-    combined_results = "".join(results)
-    assert "flask==2.3.3" in combined_results
-    assert "requests==2.31.0" in combined_results
+
+    combined_output = "".join(results)
+    assert "flask==2.3.3" in combined_output
+    assert "requests==2.31.0" in combined_output
+
+# ==========================================
+# 3. CLI INTEGRATION TESTS
+# ==========================================
+
+def test_cli_scan_json():
+    """Test the CLI 'scan' command with --json flag."""
+    # Using a simple file to ensure quick execution
+    result = runner.invoke(app, ["scan", "./tests/requirements.txt", "--json"])
+    assert result.exit_code == 0
+    import json
+    data = json.loads(result.stdout)
+    assert "target" in data
+    assert "findings" in data
+    assert "summary" in data
+
+def test_cli_help():
+    """Test that the custom help examples are present."""
+    result = runner.invoke(app, ["scan", "--help"])
+    assert result.exit_code == 0
+    assert "python3 main.py scan ./tests/Dockerfile" in result.stdout
 

@@ -1,4 +1,5 @@
-name: Security Scan
+
+name: ShieldPipe Security CI
 
 on:
   push:
@@ -7,7 +8,7 @@ on:
     branches: [ main ]
 
 jobs:
-  scan:
+  test-and-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,19 +18,42 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
-          pip3 install -r requirements.txt
-          pip3 install checkov semgrep
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest typer rich checkov semgrep
 
-      - name: Run ShieldPipe Scan (IaC)
-        run: python3 main.py scan ./tests/main.tf --json > scan-results.json
+      - name: Run Pytest Suite
+        # Validates scanner logic, Docker mounts, and Semgrep rules
+        run: python3 -m pytest tests/test_shieldpipe.py
 
-      - name: Verify Results
+      - name: Run ShieldPipe Specific Scans
+        # Individual scans for Dockerfile, Terraform, Requirements, and Container Image
         run: |
-          if grep -q "HIGH" scan-results.json; then
-            echo "High severity vulnerabilities found!"
+          mkdir -p reports
+          python3 main.py scan ./tests/Dockerfile --json > reports/dockerfile-scan.json
+          python3 main.py scan ./tests/main.tf --json > reports/terraform-scan.json
+          python3 main.py scan ./tests/requirements.txt --json > reports/dependencies-scan.json
+          python3 main.py scan python:3.9-slim --json > reports/image-scan.json
+        continue-on-error: true
+
+      - name: Security Gate
+        # Check all generated JSON files in the reports folder for CRITICAL or HIGH vulnerabilities
+        run: |
+          if grep -qE "CRITICAL|HIGH" reports/*.json; then
+            echo "Security Gate Failed: Critical or High vulnerabilities detected in one or more targets"
             exit 1
+          else
+            echo "Security Gate Passed: No high-risk issues found across all targets"
           fi
+
+      - name: Upload Scan Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shieldpipe-security-reports
+          path: reports/*.json
 
