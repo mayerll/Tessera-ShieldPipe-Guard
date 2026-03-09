@@ -87,6 +87,12 @@ Requests 2.20.0: Vulnerable to CVE-2018-18074, which can lead to unintended cred
 Vulnerability: This represents a pre-built image that may contain OS-level vulnerabilities (CVEs) in its system libraries (like openssl or libc).
 Detection: ShieldPipe triggers an image scan to identify vulnerabilities that exist within the binary layers, even if the Dockerfile itself appears clean.
 
+Note: Remediation features (--fix, --dry-run, and rollback) are available for source files only; pre-built Docker images are support scan-only.
+Image no dryrun Why?
+* Images are Read-Only: A container image is a compiled artifact. You cannot "patch" or "fix" the binary layers of an existing image directly.
+* Remediation Target: Remediation (Auto-fix) only works on Source Files (like Dockerfile requirements.txt or main.tf) because those are text files your tool can rewrite.
+
+
 ### Standard Console Output
 Run these commands to view a formatted summary of findings, including Rule IDs, Severity levels, and descriptive messages in your terminal.
 
@@ -220,6 +226,9 @@ python3 main.py scan ./tests/main.tf --dry-run
 python3 main.py scan ./tests/requirements.txt --dry-run 
 ```
 
+<img width="1486" height="877" alt="image" src="https://github.com/user-attachments/assets/df00d42c-4910-42ba-a3a7-5ca5ba651124" />
+
+
 ## 4. Automatic Remediation (Fix)
 
 ShieldPipe can automatically apply security patches and hardening configurations directly to your source files. When the `--fix` flag is used, the tool executes a "Safe-Patching" workflow: it first creates an atomic backup of the target file in the `.shieldpipe_backups` directory and then applies the remediation logic defined in `fix_rules.yaml`.
@@ -236,6 +245,22 @@ python3 main.py scan ./tests/Dockerfile --fix
 # Automatically fix Terraform security gaps (e.g., S3 ACLs, Security Group CIDRs)
 python3 main.py scan ./tests/main.tf --fix 
 
+# Automatically upgrade vulnerable Python dependencies in requirements.txt
+python3 main.py scan ./tests/requirements.txt --fix 
+```
+
+Logs:
+
+```bash
+# Automatically fix Dockerfile misconfigurations (e.g., pinning versions, adding non-root users)
+python3 main.py scan ./tests/Dockerfile --fix
+```
+
+```bash
+# Automatically fix Terraform security gaps (e.g., S3 ACLs, Security Group CIDRs)
+python3 main.py scan ./tests/main.tf --fix
+```
+```bash
 # Automatically upgrade vulnerable Python dependencies in requirements.txt
 python3 main.py scan ./tests/requirements.txt --fix 
 ```
