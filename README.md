@@ -134,6 +134,9 @@ python3 main.py scan ./tests/requirements.txt
 python3 main.py scan python:3.9-slim
 ```
 
+<img width="1719" height="788" alt="image" src="https://github.com/user-attachments/assets/365b4b82-fb20-4053-9657-baa8af658758" />
+<img width="1719" height="788" alt="image" src="https://github.com/user-attachments/assets/9d064a33-8153-4b1d-929e-f723df50b989" />
+
 
 ### Structured JSON Output
 
