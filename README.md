@@ -253,17 +253,30 @@ Logs:
 
 ```bash
 # Automatically fix Dockerfile misconfigurations (e.g., pinning versions, adding non-root users)
+# The patched file overwrites ./tests/Dockerfile, and the original is archived in .shieldpipe_backups/Dockerfile
 python3 main.py scan ./tests/Dockerfile --fix
 ```
 
+<img width="1318" height="556" alt="image" src="https://github.com/user-attachments/assets/dca79120-9fde-4b0f-9449-7b72ecd9bc14" />
+
+
 ```bash
-# Automatically fix Terraform security gaps (e.g., S3 ACLs, Security Group CIDRs)
+# Automatically remediate Terraform security gaps (e.g., S3 ACLs, Security Group CIDRs).
+# The patched file overwrites ./tests/main.tf, and the original is archived in .shieldpipe_backups/main.tf
 python3 main.py scan ./tests/main.tf --fix
 ```
+
+<img width="1547" height="852" alt="image" src="https://github.com/user-attachments/assets/807f2ed7-56ee-4334-ae91-1846ba997357" />
+<img width="1286" height="650" alt="image" src="https://github.com/user-attachments/assets/91eda0cb-8864-4a41-acc5-d8ffd0916074" />
+
 ```bash
 # Automatically upgrade vulnerable Python dependencies in requirements.txt
+# The patched file overwrites ./tests/requirements.txt, and the original is archived in .shieldpipe_backups/requirements.txt
 python3 main.py scan ./tests/requirements.txt --fix 
 ```
+
+<img width="1764" height="668" alt="image" src="https://github.com/user-attachments/assets/47f883df-c860-4746-b105-5c7630268a21" />
+
 
 ## 5. Rollback
 
@@ -276,14 +289,22 @@ Run these commands to revert security changes for specific targets:
 
 ```bash
 # Revert security changes to the original Dockerfile
+# The original Dockerfile has been copied to ./tests/Dockerfile from .shieldpipe_backups/Dockerfile
 python3 main.py rollback ./tests/Dockerfile
 
 # Revert security changes to the Terraform configuration
+# The original Dockerfile has been copied to ./tests/main.tf  from .shieldpipe_backups/main.tf 
 python3 main.py rollback ./tests/main.tf 
 
 # Revert version upgrades to requirements.txt
+# The original Dockerfile has been copied to ./tests/requirements.txt  from .shieldpipe_backups/requirements.txt
 python3 main.py rollback ./tests/requirements.txt
 ```
+
+Logs:
+
+<img width="896" height="138" alt="image" src="https://github.com/user-attachments/assets/e1272c3d-1a20-4f7a-895a-76d34190b8e2" />
+
 
 ### Rollback Confirmation
 
