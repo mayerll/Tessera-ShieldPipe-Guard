@@ -1,5 +1,9 @@
 
 rules:
+  # ==========================================
+  # DOCKERFILE SECURITY RULES (DS-XXXX)
+  # ==========================================
+
   # 1. Fix 'latest' tag (DS-0001)
   - id: DS-0001-latest-tag
     languages: [dockerfile]
@@ -9,7 +13,6 @@ rules:
     severity: WARNING
 
   # 2. Prevent running as ROOT (DS-0002)
-  # Replaces 'USER root' with user creation and switching
   - id: DS-0002-no-root-user
     languages: [dockerfile]
     message: "Container should not run as root. Creating and switching to appuser."
@@ -19,17 +22,7 @@ rules:
       USER appuser
     severity: ERROR
 
-  # 3. Hardcoded Secrets (DS-0031)
-  # Replaces sensitive values with an environment variable placeholder
-  - id: DS-0031-hardcoded-secrets
-    languages: [dockerfile]
-    message: "Hardcoded API Key detected. Replacing with an environment variable placeholder."
-    pattern: 'ENV API_KEY="$VAL"'
-    fix: 'ENV API_KEY=${API_KEY_SECRET}'
-    severity: CRITICAL
-
-  # 4. Optimize apt-get (DS-0029)
-  # Adds security flags and cleans up the cache to reduce image size
+  # 3. Optimize apt-get (DS-0029)
   - id: DS-0029-apt-get-clean
     languages: [dockerfile]
     message: "Optimizing apt-get. Adding --no-install-recommends and cleaning cache."
@@ -37,23 +30,107 @@ rules:
     fix: "RUN apt-get update && apt-get install -y --no-install-recommends $PKG && rm -rf /var/lib/apt/lists/*"
     severity: WARNING
 
+  # 4. Hardcoded Secrets (DS-0031)
+  - id: DS-0031-hardcoded-secrets
+    languages: [dockerfile]
+    message: "Hardcoded API Key detected. Replacing with an environment variable placeholder."
+    pattern: 'ENV API_KEY="$VAL"'
+    fix: 'ENV API_KEY=${API_KEY_SECRET}'
+    severity: CRITICAL
+
   # 5. Use COPY instead of ADD (DS-0005)
-  # Replaces risky ADD (remote URL fetch) with a safer RUN curl approach
   - id: DS-0005-use-copy-not-add
     languages: [dockerfile]
-    message: "Prefer COPY over ADD. Remote files should be downloaded via curl/wget and verified."
+    message: "Prefer COPY over ADD. Remote files should be downloaded via curl/wget."
     pattern: "ADD $URL $DEST"
     fix: "RUN curl -fsSL $URL -o $DEST"
     severity: WARNING
 
   # 6. Add Missing Healthcheck (DS-0026)
-  # Injects a HEALTHCHECK instruction right before the CMD
   - id: DS-0026-add-healthcheck
     languages: [dockerfile]
-    message: "Missing HEALTHCHECK. Adding a default health check."
+    message: "Missing HEALTHCHECK. Adding a default health check before CMD."
     pattern: "CMD [$EXEC, $FILE]"
     fix: |
       HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
       CMD [$EXEC, $FILE]
     severity: INFO
+
+  # ==========================================
+  # TERRAFORM SECURITY RULES (TF-XXXX)
+  # ==========================================
+
+  # 1. S3 Public Access Fix (TF-0001)
+  - id: TF-0001-s3-public-acl
+    languages: [hcl]
+    message: "S3 Buckets should not be public. Changing ACL to private."
+    pattern: |
+      resource "aws_s3_bucket" "$ID" {
+        ...
+        acl = "public-read"
+        ...
+      }
+    fix: |
+      resource "aws_s3_bucket" "$ID" {
+        ...
+        acl = "private"
+        ...
+      }
+    severity: ERROR
+
+  # 2. Open SSH Security Group Fix (TF-0002)
+  - id: TF-0002-open-ssh
+    languages: [hcl]
+    message: "Security Groups should not allow SSH (Port 22) from 0.0.0.0/0."
+    pattern: |
+      ingress {
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    fix: |
+      ingress {
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_blocks = ["10.0.0.0/8"] # Restricted to internal network
+      }
+    severity: ERROR
+
+  # 3. EBS Encryption Fix (TF-0003)
+  - id: TF-0003-ebs-encryption
+    languages: [hcl]
+    message: "EBS Volumes must be encrypted. Setting encrypted to true."
+    pattern: "encrypted = false"
+    fix: "encrypted = true"
+    severity: WARNING
+
+  # 4. Hardcoded DB Password Fix (TF-0031)
+  - id: TF-0031-db-password-secret
+    languages: [hcl]
+    message: "Hardcoded password detected. Moving to a variable placeholder."
+    pattern: 'password = "$PASS"'
+    fix: 'password = var.database_password'
+    severity: CRITICAL
+
+  # ==========================================
+  # PYTHON DEPENDENCY RULES (PY-XXXX)
+  # ==========================================
+
+  # 1. Vulnerable Flask (PY-0001)
+  - id: PY-0001-vulnerable-flask
+    languages: [generic]
+    message: "Flask 0.12.1 is highly vulnerable. Upgrading to 2.3.3."
+    pattern: "flask==0.12.1"
+    fix: "flask==2.3.3"
+    severity: ERROR
+
+  # 2. Vulnerable Requests (PY-0002)
+  - id: PY-0002-vulnerable-requests
+    languages: [generic]
+    message: "Requests 2.20.0 is vulnerable to credential leaks. Upgrading to 2.31.0."
+    pattern: "requests==2.20.0"
+    fix: "requests==2.31.0"
+    severity: ERROR
 
